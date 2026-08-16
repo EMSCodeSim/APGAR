@@ -1,23 +1,19 @@
-# Apply horse-crush improvements to EMS_Code_SIM
+# EMS_Code_SIM apply kit (from APGAR handoff agent)
 
-This folder contains the full updated files from the APGAR agent that cannot push to `EMSCodeSim/EMS_Code_SIM`.
+This agent can push to APGAR only. Apply these files on `EMSCodeSim/EMS_Code_SIM`.
 
-## One-command apply (from EMS_Code_SIM repo root)
+## Includes
+1. Horse-crush teaching-path / transport UX improvements
+2. Breath-sound simulator restore (stridor/neck, RML/lingula, CSS tokens, responsive.css)
 
+## Apply from EMS_Code_SIM root
 ```bash
 bash /path/to/ems-code-sim-horse-apply/APPLY.sh .
-git checkout -b cursor/horse-crush-improvements
+git checkout -b cursor/horse-crush-improvements-11c1
 git add -A
-git commit -m "Improve horse-crush scenario teaching path and transport UX"
+git commit -m "Improve horse-crush scenario and restore breath-sound simulator teaching features"
 git push -u origin HEAD
 ```
 
-Or apply the patch:
-
-```bash
-git am /path/to/ems-code-sim-horse-apply/horse-crush-improvements.patch
-```
-
-## Paste this to a new Cloud Agent on EMS_Code_SIM
-
-Apply the horse-crush improvements from the APGAR handoff branch `cursor/horse-crush-patch-handoff-11c1` (folder `ems-code-sim-horse-apply/` or file `horse-crush-improvements.patch`). Create branch `cursor/horse-crush-improvements-11c1`, commit, push, and open a PR to main. Run `node tools/test-horse-crush-phase-plan.js` and related contract tests before finishing.
+## Cloud Agent paste prompt
+Apply updates from EMSCodeSim/APGAR branch `cursor/horse-crush-patch-handoff-11c1` folder `ems-code-sim-horse-apply/`. Copy files into this repo, create branch `cursor/horse-crush-improvements-11c1`, run `node tools/test-horse-crush-phase-plan.js` and related contract tests, commit, push, and open a PR to main.
