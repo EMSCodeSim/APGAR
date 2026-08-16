@@ -9,7 +9,7 @@ Open `index.html` in a browser. Adjust **Appearance**, **Pulse**, **Grimace**, *
 - Full five-component APGAR with live total and brief interpretation
 - Visual cues for central cyanosis, acrocyanosis, chest rise, limb tone, and pulse
 - Stimulate button to demonstrate grimace / cry response
-- Distressed and vigorous demo scenarios
+- Distressed, moderate, and vigorous demo scenarios
 - Keyboard-focusable controls and `prefers-reduced-motion` support
 
 ## Notes
