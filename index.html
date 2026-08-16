@@ -556,6 +556,7 @@
             <button type="button" id="blinkBtn">Blink</button>
             <button type="button" id="cryBtn">Toggle cry</button>
             <button type="button" id="scenarioPoor">Scenario: distressed</button>
+            <button type="button" id="scenarioModerate">Scenario: moderate</button>
             <button type="button" id="scenarioGood">Scenario: vigorous</button>
           </div>
         </div>
@@ -616,6 +617,7 @@
     blinkBtn: document.getElementById("blinkBtn"),
     cryBtn: document.getElementById("cryBtn"),
     scenarioPoor: document.getElementById("scenarioPoor"),
+    scenarioModerate: document.getElementById("scenarioModerate"),
     scenarioGood: document.getElementById("scenarioGood")
   };
 
@@ -631,7 +633,38 @@
     blinking: false,
     breathPhase: 0,
     pulsePhase: 0,
+    stimulusTimer: null,
     reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  };
+
+  const SCENARIOS = {
+    distressed: {
+      appearance: 0,
+      pulse: 1,
+      grimace: 0,
+      activity: 0,
+      respiration: 1,
+      breathsPerMin: 18,
+      crying: false
+    },
+    moderate: {
+      appearance: 1,
+      pulse: 1,
+      grimace: 1,
+      activity: 1,
+      respiration: 1,
+      breathsPerMin: 28,
+      crying: false
+    },
+    vigorous: {
+      appearance: 2,
+      pulse: 2,
+      grimace: 2,
+      activity: 2,
+      respiration: 2,
+      breathsPerMin: 40,
+      crying: true
+    }
   };
 
   const extremities = [els.handL, els.handR, els.footL, els.footR];
@@ -671,17 +704,22 @@
     els.toneReadout.textContent = TONE_LABELS[score];
   }
 
-  function setRespiration(score) {
+  function setBreathRate(bpm) {
+    const n = Math.max(0, Math.min(70, Number(bpm) || 0));
+    state.breathsPerMin = n;
+    els.bpm.value = String(n);
+    els.bpmVal.textContent = String(n);
+  }
+
+  function setRespiration(score, { forceBreaths } = {}) {
     state.respiration = score;
     if (score === 0) {
-      state.breathsPerMin = 0;
-      els.bpm.value = "0";
-      els.bpmVal.textContent = "0";
+      setBreathRate(0);
       state.crying = false;
+    } else if (forceBreaths != null) {
+      setBreathRate(forceBreaths);
     } else if (state.breathsPerMin === 0) {
-      state.breathsPerMin = score === 1 ? 24 : 40;
-      els.bpm.value = String(state.breathsPerMin);
-      els.bpmVal.textContent = String(state.breathsPerMin);
+      setBreathRate(score === 1 ? 24 : 40);
     }
     updateBreathReadout();
     setMouth();
@@ -736,8 +774,28 @@
     updateScoreboard();
   }
 
-  function setScenario(scores) {
-    Object.entries(scores).forEach(([k, v]) => applyScore(k, v));
+  function clearStimulusTimer() {
+    if (state.stimulusTimer != null) {
+      clearTimeout(state.stimulusTimer);
+      state.stimulusTimer = null;
+    }
+  }
+
+  function setScenario(preset) {
+    const scores = typeof preset === "string" ? SCENARIOS[preset] : preset;
+    if (!scores) return;
+
+    clearStimulusTimer();
+    state.grimacing = false;
+    state.crying = Boolean(scores.crying);
+
+    setAppearance(scores.appearance);
+    setPulse(scores.pulse);
+    state.grimace = scores.grimace;
+    setActivity(scores.activity);
+    setRespiration(scores.respiration, { forceBreaths: scores.breathsPerMin });
+    setMouth();
+    updateScoreboard();
   }
 
   /* ---- Mouth / cry / stimulus ---- */
@@ -749,6 +807,7 @@
   }
 
   function stimulate() {
+    clearStimulusTimer();
     state.grimacing = false;
     state.crying = false;
     setMouth();
@@ -765,7 +824,8 @@
     if (state.grimace === 1) {
       state.grimacing = true;
       setMouth();
-      setTimeout(() => {
+      state.stimulusTimer = setTimeout(() => {
+        state.stimulusTimer = null;
         state.grimacing = false;
         setMouth();
       }, 900);
@@ -774,9 +834,10 @@
 
     state.crying = true;
     setMouth();
-    setTimeout(() => {
+    state.stimulusTimer = setTimeout(() => {
+      state.stimulusTimer = null;
       // leave cry on briefly so learners see strong response
-      state.crying = state.respiration === 2 ? true : false;
+      state.crying = state.respiration === 2;
       if (state.respiration < 2) setMouth();
     }, 1200);
   }
@@ -901,15 +962,9 @@
   els.stimulateBtn.addEventListener("click", stimulate);
   els.blinkBtn.addEventListener("click", () => doBlink());
   els.cryBtn.addEventListener("click", toggleCry);
-  els.scenarioPoor.addEventListener("click", () => {
-    state.crying = false;
-    setScenario({ appearance: 0, pulse: 1, grimace: 0, activity: 0, respiration: 1 });
-  });
-  els.scenarioGood.addEventListener("click", () => {
-    state.crying = true;
-    setScenario({ appearance: 2, pulse: 2, grimace: 2, activity: 2, respiration: 2 });
-    setMouth();
-  });
+  els.scenarioPoor.addEventListener("click", () => setScenario("distressed"));
+  els.scenarioModerate.addEventListener("click", () => setScenario("moderate"));
+  els.scenarioGood.addEventListener("click", () => setScenario("vigorous"));
 
   // Init
   setAppearance(2);
