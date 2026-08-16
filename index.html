@@ -3,225 +3,924 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Apgar Baby (SVG, Motion)</title>
+<meta name="description" content="Interactive APGAR newborn simulator for EMS and clinical training." />
+<title>EMSCodeSim — APGAR Baby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
 <style>
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 12px; }
-  .stage { max-width: 420px; margin: 0 auto; }
-  .controls { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0 2px; }
-  button { padding:8px 10px; border:1px solid #ddd; border-radius:8px; background:#fff; }
-  .row { display:flex; gap:8px; align-items:center; justify-content:center; margin:6px 0; }
-  .row label { font-size: 14px; }
-  input[type="range"] { width: 200px; }
+  :root {
+    --ink: #1a2b33;
+    --ink-soft: #3d5560;
+    --muted: #6b818c;
+    --line: #c9d6dc;
+    --panel: rgba(255, 255, 255, 0.78);
+    --panel-solid: #f4f8fa;
+    --accent: #0e7c7b;
+    --accent-deep: #095e5d;
+    --warn: #b45309;
+    --danger: #b42318;
+    --ok: #157a3a;
+    --skin-light: #f3d5c0;
+    --skin-mid: #eec7ae;
+    --stage-bg: #e8f1f4;
+    --shadow: 0 18px 40px rgba(26, 43, 51, 0.08);
+    --radius: 18px;
+    --font-ui: "Figtree", sans-serif;
+    --font-display: "Fraunces", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    background:
+      radial-gradient(900px 500px at 12% -10%, #d7ecee 0%, transparent 55%),
+      radial-gradient(700px 420px at 100% 0%, #dce7f2 0%, transparent 50%),
+      linear-gradient(165deg, #f2f7f8 0%, #e4eef2 45%, #dfe9ef 100%);
+  }
+
+  .page {
+    width: min(1100px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 28px 0 48px;
+  }
+
+  header.app-header {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .brand {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: var(--accent-deep);
+  }
+
+  .brand span {
+    color: var(--ink);
+  }
+
+  .lede {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    line-height: 1.45;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .stage-wrap {
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 214, 220, 0.9);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px;
+    position: sticky;
+    top: 14px;
+  }
+
+  .stage {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 18%, #ffffff 0%, var(--stage-bg) 62%, #d5e4ea 100%);
+  }
+
+  .stage svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .vitals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .vital {
+    flex: 1 1 120px;
+    background: var(--panel-solid);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+
+  .vital .label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .vital .value {
+    font-weight: 700;
+    font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scoreboard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, #0f4f4e, #0e7c7b 70%, #1a8f7f);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+
+  .scoreboard .title {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  .scoreboard .total {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5vw, 3rem);
+    line-height: 1;
+  }
+
+  .scoreboard .interp {
+    margin: 4px 0 0;
+    font-size: 0.95rem;
+    opacity: 0.95;
+  }
+
+  .scoreboard .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .chip {
+    min-width: 2.1rem;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.16);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .panel {
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(201, 214, 220, 0.9);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+
+  .panel + .panel { margin-top: 14px; }
+
+  .panel h2 {
+    margin: 0 0 4px;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+  }
+
+  .panel .hint {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .criteria {
+    display: grid;
+    gap: 12px;
+  }
+
+  .criterion {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+    padding: 12px;
+  }
+
+  .criterion header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .criterion h3 {
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  .criterion .letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-right: 6px;
+    border-radius: 6px;
+    background: #e5f3f3;
+    color: var(--accent-deep);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .criterion .desc {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+  }
+
+  .seg {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .seg button {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: #f7fbfc;
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 9px 8px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+  }
+
+  .seg button:hover {
+    border-color: #9eb8c2;
+    transform: translateY(-1px);
+  }
+
+  .seg button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .seg button[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tools button,
+  .stimulus {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .tools button:hover,
+  .stimulus:hover { border-color: #9eb8c2; }
+
+  .tools button:focus-visible,
+  .stimulus:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .rate-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+  }
+
+  .rate-row label { font-size: 0.9rem; color: var(--ink-soft); }
+  .rate-row output {
+    min-width: 3.5rem;
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+
+  .legend {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* SVG motion helpers */
+  #babyGroup, #torso, #leftArm, #rightArm, #leftLeg, #rightLeg,
+  #handL, #handR, #footL, #footR, #faceGroup {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  #torso { transform-origin: center top; }
+  #leftArm { transform-origin: 100% 10%; }
+  #rightArm { transform-origin: 0% 10%; }
+  #leftLeg { transform-origin: 50% 0%; }
+  #rightLeg { transform-origin: 50% 0%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
-<div class="stage">
-  <svg id="baby" viewBox="0 0 1080 1440" style="width:100%;height:auto;display:block">
-    <defs>
-      <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"  stop-color="#f3d5c0"/>
-        <stop offset="100%" stop-color="#eec7ae"/>
-      </linearGradient>
-      <linearGradient id="cyanosis" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"  stop-color="#7ab1ff" stop-opacity="0.42"/>
-        <stop offset="100%" stop-color="#6fa8ff" stop-opacity="0.30"/>
-      </linearGradient>
-    </defs>
+  <div class="page">
+    <header class="app-header">
+      <div class="brand">EMSCodeSim <span>APGAR</span></div>
+      <p class="lede">Adjust each APGAR criterion and watch the newborn’s appearance, tone, breathing, heart rate cue, and response change in real time.</p>
+    </header>
 
-    <!-- Background -->
-    <rect x="0" y="0" width="1080" height="1440" fill="#f7f7f9"/>
+    <div class="layout">
+      <section class="stage-wrap" aria-label="Newborn visualization">
+        <div class="stage">
+          <svg id="baby" viewBox="0 0 1080 1440" role="img" aria-labelledby="babyTitle babyDesc">
+            <title id="babyTitle">Animated newborn for APGAR scoring practice</title>
+            <desc id="babyDesc">Baby appearance, limb tone, breathing depth, and facial response update with the selected APGAR scores.</desc>
+            <defs>
+              <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f3d5c0"/>
+                <stop offset="100%" stop-color="#eec7ae"/>
+              </linearGradient>
+              <linearGradient id="cyanosis" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7ab1ff" stop-opacity="0.42"/>
+                <stop offset="100%" stop-color="#6fa8ff" stop-opacity="0.30"/>
+              </linearGradient>
+              <radialGradient id="pulseGlow" cx="50%" cy="45%" r="45%">
+                <stop offset="0%" stop-color="#ef6b6b" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#ef6b6b" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
 
-    <!-- Full-body tint for central cyanosis -->
-    <rect id="fullTint" x="0" y="0" width="1080" height="1440" fill="url(#cyanosis)" opacity="0" />
+            <rect x="0" y="0" width="1080" height="1440" fill="transparent"/>
+            <rect id="fullTint" x="0" y="0" width="1080" height="1440" fill="url(#cyanosis)" opacity="0"/>
 
-    <!-- Baby (grouped so we can nudge chest/abdomen) -->
-    <g id="babyGroup" transform="translate(0,0)">
+            <g id="babyGroup">
+              <ellipse id="pulseHalo" cx="540" cy="620" rx="120" ry="90" fill="url(#pulseGlow)" opacity="0"/>
 
-      <!-- Torso & abdomen path (slightly stretched during inhale) -->
-      <path id="torso" fill="url(#skin)" d="
-        M340,520
-        C340,420 430,360 540,360
-        C650,360 740,420 740,520
-        L740,900
-        C740,990 660,1040 540,1040
-        C420,1040 340,990 340,900 Z" />
+              <path id="torso" fill="url(#skin)" d="
+                M340,520
+                C340,420 430,360 540,360
+                C650,360 740,420 740,520
+                L740,900
+                C740,990 660,1040 540,1040
+                C420,1040 340,990 340,900 Z"/>
 
-      <!-- Head/face (separate group for blink/cry) -->
-      <g id="faceGroup">
-        <ellipse id="face" cx="540" cy="300" rx="160" ry="130" fill="url(#skin)"/>
-        <!-- Eyes -->
-        <g id="eyes">
-          <circle id="eyeL" cx="500" cy="295" r="8" fill="#5a4941"/>
-          <circle id="eyeR" cx="580" cy="295" r="8" fill="#5a4941"/>
-          <!-- Eyelids (shown during blink) -->
-          <rect id="lidL" x="492" y="287" width="16" height="16" rx="8" fill="#eec7ae" opacity="0"/>
-          <rect id="lidR" x="572" y="287" width="16" height="16" rx="8" fill="#eec7ae" opacity="0"/>
-        </g>
-        <!-- Mouth (neutral + open/cry) -->
-        <path id="mouthNeutral" d="M500,330 Q540,350 580,330" stroke="#5a4941" stroke-width="6" fill="none" stroke-linecap="round"/>
-        <path id="mouthOpen" d="M520,330 q20,28 40,0 q-20,22 -40,0 Z" fill="#5a4941" opacity="0"/>
-      </g>
+              <g id="faceGroup">
+                <ellipse id="face" cx="540" cy="300" rx="160" ry="130" fill="url(#skin)"/>
+                <g id="eyes">
+                  <circle id="eyeL" cx="500" cy="295" r="8" fill="#5a4941"/>
+                  <circle id="eyeR" cx="580" cy="295" r="8" fill="#5a4941"/>
+                  <rect id="lidL" x="492" y="287" width="16" height="16" rx="8" fill="#eec7ae" opacity="0"/>
+                  <rect id="lidR" x="572" y="287" width="16" height="16" rx="8" fill="#eec7ae" opacity="0"/>
+                </g>
+                <path id="mouthNeutral" d="M500,330 Q540,350 580,330" stroke="#5a4941" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <path id="mouthOpen" d="M520,330 q20,28 40,0 q-20,22 -40,0 Z" fill="#5a4941" opacity="0"/>
+                <path id="mouthGrimace" d="M505,335 Q540,318 575,335" stroke="#5a4941" stroke-width="6" fill="none" stroke-linecap="round" opacity="0"/>
+              </g>
 
-      <!-- Arms -->
-      <path id="leftArm"  fill="url(#skin)" d="M340,560 C260,600 250,700 300,740 L340,760 L360,720 L350,680 Z"/>
-      <path id="rightArm" fill="url(#skin)" d="M740,560 C820,600 830,700 780,740 L740,760 L720,720 L730,680 Z"/>
+              <path id="leftArm" fill="url(#skin)" d="M340,560 C260,600 250,700 300,740 L340,760 L360,720 L350,680 Z"/>
+              <path id="rightArm" fill="url(#skin)" d="M740,560 C820,600 830,700 780,740 L740,760 L720,720 L730,680 Z"/>
+              <ellipse id="handL" cx="280" cy="740" rx="55" ry="35" fill="url(#skin)"/>
+              <ellipse id="handR" cx="820" cy="740" rx="55" ry="35" fill="url(#skin)"/>
 
-      <!-- Hands (separate for acrocyanosis) -->
-      <ellipse id="handR" cx="820" cy="740" rx="55" ry="35" fill="url(#skin)"/>
-      <ellipse id="handL" cx="280" cy="740" rx="55" ry="35" fill="url(#skin)"/>
+              <path id="leftLeg" fill="url(#skin)" d="M420,1020 C390,1100 390,1200 430,1260 C470,1320 530,1310 540,1250 C545,1200 520,1100 500,1040 Z"/>
+              <path id="rightLeg" fill="url(#skin)" d="M660,1020 C690,1100 690,1200 650,1260 C610,1320 550,1310 540,1250 C535,1200 560,1100 580,1040 Z"/>
+              <ellipse id="footL" cx="450" cy="1285" rx="65" ry="38" fill="url(#skin)"/>
+              <ellipse id="footR" cx="630" cy="1285" rx="65" ry="38" fill="url(#skin)"/>
+            </g>
+          </svg>
+        </div>
 
-      <!-- Legs -->
-      <path id="leftLeg"  fill="url(#skin)" d="M460,1040 C440,1120 440,1200 480,1260 C520,1320 600,1320 600,1260 C600,1200 560,1090 540,1040 Z"/>
-      <path id="rightLeg" fill="url(#skin)" d="M620,1040 C640,1120 640,1200 600,1260 C560,1320 480,1320 480,1260 C480,1200 520,1090 540,1040 Z"/>
+        <div class="vitals" aria-live="polite">
+          <div class="vital">
+            <span class="label">Heart rate cue</span>
+            <span class="value" id="hrReadout">140 bpm</span>
+          </div>
+          <div class="vital">
+            <span class="label">Breathing</span>
+            <span class="value" id="breathReadout">40 / min</span>
+          </div>
+          <div class="vital">
+            <span class="label">Tone</span>
+            <span class="value" id="toneReadout">Active</span>
+          </div>
+        </div>
+      </section>
 
-      <!-- Feet (separate for acrocyanosis) -->
-      <ellipse id="footR"  cx="620" cy="1280" rx="65" ry="38" fill="url(#skin)"/>
-      <ellipse id="footL" cx="460" cy="1280" rx="65" ry="38" fill="url(#skin)"/>
-    </g>
-  </svg>
+      <section aria-label="APGAR controls">
+        <div class="scoreboard" aria-live="polite">
+          <div>
+            <div class="title">APGAR total</div>
+            <div class="total"><span id="totalScore">10</span><span aria-hidden="true">/10</span></div>
+            <p class="interp" id="interpretation">Generally reassuring</p>
+          </div>
+          <div class="chips" id="scoreChips" aria-hidden="true"></div>
+        </div>
 
-  <!-- Quick demo controls -->
-  <div class="controls">
-    <button onclick="setAppearance(0)">Appearance 0 (central cyanosis)</button>
-    <button onclick="setAppearance(1)">Appearance 1 (acrocyanosis)</button>
-    <button onclick="setAppearance(2)">Appearance 2 (pink)</button>
+        <div class="panel">
+          <h2>Score the newborn</h2>
+          <p class="hint">Each criterion is 0–2. The baby updates immediately so learners can link findings to the visual picture.</p>
+
+          <div class="criteria" id="criteria">
+            <div class="criterion" data-key="appearance">
+              <header>
+                <h3><span class="letter">A</span>Appearance (color)</h3>
+                <p class="desc" id="appearanceDesc">Completely pink</p>
+              </header>
+              <div class="seg" role="group" aria-label="Appearance score">
+                <button type="button" data-score="0">0 Blue/pale</button>
+                <button type="button" data-score="1">1 Acrocyanosis</button>
+                <button type="button" data-score="2" aria-pressed="true">2 Pink</button>
+              </div>
+            </div>
+
+            <div class="criterion" data-key="pulse">
+              <header>
+                <h3><span class="letter">P</span>Pulse</h3>
+                <p class="desc" id="pulseDesc">&gt; 100 bpm</p>
+              </header>
+              <div class="seg" role="group" aria-label="Pulse score">
+                <button type="button" data-score="0">0 Absent</button>
+                <button type="button" data-score="1">&lt; 100</button>
+                <button type="button" data-score="2" aria-pressed="true">&gt; 100</button>
+              </div>
+            </div>
+
+            <div class="criterion" data-key="grimace">
+              <header>
+                <h3><span class="letter">G</span>Grimace (reflex)</h3>
+                <p class="desc" id="grimaceDesc">Cry / sneeze / cough</p>
+              </header>
+              <div class="seg" role="group" aria-label="Grimace score">
+                <button type="button" data-score="0">0 None</button>
+                <button type="button" data-score="1">1 Grimace</button>
+                <button type="button" data-score="2" aria-pressed="true">2 Cry</button>
+              </div>
+              <div class="tools" style="margin-top:10px">
+                <button type="button" class="stimulus" id="stimulateBtn">Stimulate (test reflex)</button>
+              </div>
+            </div>
+
+            <div class="criterion" data-key="activity">
+              <header>
+                <h3><span class="letter">A</span>Activity (tone)</h3>
+                <p class="desc" id="activityDesc">Active motion</p>
+              </header>
+              <div class="seg" role="group" aria-label="Activity score">
+                <button type="button" data-score="0">0 Limp</button>
+                <button type="button" data-score="1">1 Some flexion</button>
+                <button type="button" data-score="2" aria-pressed="true">2 Active</button>
+              </div>
+            </div>
+
+            <div class="criterion" data-key="respiration">
+              <header>
+                <h3><span class="letter">R</span>Respiration</h3>
+                <p class="desc" id="respirationDesc">Good / crying</p>
+              </header>
+              <div class="seg" role="group" aria-label="Respiration score">
+                <button type="button" data-score="0">0 Absent</button>
+                <button type="button" data-score="1">1 Weak / irregular</button>
+                <button type="button" data-score="2" aria-pressed="true">2 Strong</button>
+              </div>
+              <div class="rate-row">
+                <label for="bpm">Breaths/min</label>
+                <input id="bpm" type="range" min="0" max="70" value="40" />
+                <output id="bpmVal" for="bpm">40</output>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Quick actions</h2>
+          <p class="hint">Useful during demos or skills stations.</p>
+          <div class="tools">
+            <button type="button" id="blinkBtn">Blink</button>
+            <button type="button" id="cryBtn">Toggle cry</button>
+            <button type="button" id="scenarioPoor">Scenario: distressed</button>
+            <button type="button" id="scenarioGood">Scenario: vigorous</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Teaching notes</h2>
+          <ul class="legend">
+            <li>APGAR is assessed at 1 and 5 minutes (and later if needed); this sim is for recognition practice, not timing.</li>
+            <li>Appearance 1 shows blue hands/feet only; Appearance 0 adds central cyanosis.</li>
+            <li>Pulse drives the chest glow rate. Grimace response is clearest after Stimulate.</li>
+            <li>Activity changes limb posture; Respiration changes chest rise and optional cry.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
   </div>
-  <div class="row">
-    <label>Respiration (Apgar):</label>
-    <button onclick="setRespiration(0)">0</button>
-    <button onclick="setRespiration(1)">1</button>
-    <button onclick="setRespiration(2)">2</button>
-  </div>
-  <div class="row">
-    <label>Breaths/min</label>
-    <input id="bpm" type="range" min="10" max="70" value="40" oninput="setBreathsPerMin(this.value)">
-    <span id="bpmVal">40</span>
-  </div>
-  <div class="row">
-    <button onclick="toggleCry()">Toggle Cry</button>
-    <button onclick="blinkNow()">Blink Now</button>
-  </div>
-</div>
 
 <script>
-/* ========= Elements ========= */
-const fullTint = document.getElementById('fullTint');
-const handL = document.getElementById('handL');
-const handR = document.getElementById('handR');
-const footL = document.getElementById('footL');
-const footR = document.getElementById('footR');
-const babyGroup = document.getElementById('babyGroup');
-const torso = document.getElementById('torso');
-const mouthNeutral = document.getElementById('mouthNeutral');
-const mouthOpen = document.getElementById('mouthOpen');
-const lidL = document.getElementById('lidL');
-const lidR = document.getElementById('lidR');
-const bpmVal = document.getElementById('bpmVal');
+(() => {
+  const DESCS = {
+    appearance: ["Blue / pale (central cyanosis)", "Body pink, extremities blue", "Completely pink"],
+    pulse: ["Absent", "< 100 bpm", "> 100 bpm"],
+    grimace: ["No response", "Grimace only", "Cry / sneeze / cough"],
+    activity: ["Limp", "Some flexion", "Active motion"],
+    respiration: ["Absent", "Weak / irregular", "Good / crying"]
+  };
 
-/* ========= Appearance (Apgar: Appearance 0/1/2) ========= */
-function setAppearance(score){
-  // reset
-  fullTint.setAttribute('opacity','0');
-  [handL, handR, footL, footR].forEach(n => n.style.fill = 'url(#skin)');
+  const TONE_LABELS = ["Limp", "Some flexion", "Active"];
 
-  if(score === 0){
-    // central cyanosis
-    fullTint.setAttribute('opacity','1');
-  } else if(score === 1){
-    // acrocyanosis only (hands/feet)
-    const cyan = 'url(#cyanosis)';
-    [handL, handR, footL, footR].forEach(n => n.style.fill = cyan);
-  } // score 2 = pink (default)
-}
+  const els = {
+    fullTint: document.getElementById("fullTint"),
+    handL: document.getElementById("handL"),
+    handR: document.getElementById("handR"),
+    footL: document.getElementById("footL"),
+    footR: document.getElementById("footR"),
+    babyGroup: document.getElementById("babyGroup"),
+    torso: document.getElementById("torso"),
+    faceGroup: document.getElementById("faceGroup"),
+    leftArm: document.getElementById("leftArm"),
+    rightArm: document.getElementById("rightArm"),
+    leftLeg: document.getElementById("leftLeg"),
+    rightLeg: document.getElementById("rightLeg"),
+    mouthNeutral: document.getElementById("mouthNeutral"),
+    mouthOpen: document.getElementById("mouthOpen"),
+    mouthGrimace: document.getElementById("mouthGrimace"),
+    lidL: document.getElementById("lidL"),
+    lidR: document.getElementById("lidR"),
+    pulseHalo: document.getElementById("pulseHalo"),
+    bpm: document.getElementById("bpm"),
+    bpmVal: document.getElementById("bpmVal"),
+    totalScore: document.getElementById("totalScore"),
+    interpretation: document.getElementById("interpretation"),
+    scoreChips: document.getElementById("scoreChips"),
+    hrReadout: document.getElementById("hrReadout"),
+    breathReadout: document.getElementById("breathReadout"),
+    toneReadout: document.getElementById("toneReadout"),
+    stimulateBtn: document.getElementById("stimulateBtn"),
+    blinkBtn: document.getElementById("blinkBtn"),
+    cryBtn: document.getElementById("cryBtn"),
+    scenarioPoor: document.getElementById("scenarioPoor"),
+    scenarioGood: document.getElementById("scenarioGood")
+  };
 
-/* ========= Respiration-driven motion =========
-   Breath depth maps to Apgar Respiration:
-   0 → minimal depth, 1 → shallow, 2 → normal.
-================================================ */
-let respLevel = 2; // 0,1,2
-function setRespiration(level){
-  respLevel = Math.max(0, Math.min(2, Number(level)));
-  // Optional: also auto-toggle cry for 2
-  // mouthOpen.style.opacity = (respLevel === 2 && crying) ? 1 : 0;
-}
+  const state = {
+    appearance: 2,
+    pulse: 2,
+    grimace: 2,
+    activity: 2,
+    respiration: 2,
+    breathsPerMin: 40,
+    crying: false,
+    grimacing: false,
+    blinking: false,
+    breathPhase: 0,
+    pulsePhase: 0,
+    reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  };
 
-/* ========= Breathing animation ========= */
-let breathsPerMin = 40;
-function setBreathsPerMin(v){
-  breathsPerMin = Number(v);
-  bpmVal.textContent = String(breathsPerMin);
-}
+  const extremities = [els.handL, els.handR, els.footL, els.footR];
 
-let t0 = performance.now();
-function animateBreath(now){
-  const dt = (now - t0) / 1000;
-  t0 = now;
-
-  const freq = breathsPerMin / 60; // Hz
-  breathPhase += dt * freq * 2*Math.PI;
-
-  // Depth by respiration score (very subtle)
-  const baseDepth = [0.5, 1.5, 3.0][respLevel]; // px of vertical scaling
-  const scaleY = 1 + (Math.sin(breathPhase) * baseDepth / 100); // small scale
-  // Apply a tiny translateY to the group & a scale to torso to simulate expansion
-  const rise = Math.sin(breathPhase) * baseDepth; // px
-  babyGroup.setAttribute('transform', `translate(0, ${-rise.toFixed(2)})`);
-  torso.setAttribute('transform', `translate(0,0) scale(1, ${scaleY.toFixed(4)})`);
-
-  requestAnimationFrame(animateBreath);
-}
-let breathPhase = 0;
-requestAnimationFrame(animateBreath);
-
-/* ========= Micro-jitter (hands/feet) ========= */
-function jitter(el, max=0.5){
-  const x = (Math.random()*2-1)*max;
-  const y = (Math.random()*2-1)*max;
-  const old = el.getAttribute('data-base') || '0,0';
-  // Store base translation once
-  if(!el.hasAttribute('data-base')){
-    el.setAttribute('data-base','0,0');
-    el.setAttribute('data-jx','0'); el.setAttribute('data-jy','0');
+  function setAppearance(score) {
+    state.appearance = score;
+    els.fullTint.setAttribute("opacity", score === 0 ? "1" : "0");
+    const fill = score === 1 ? "url(#cyanosis)" : "url(#skin)";
+    extremities.forEach((n) => n.setAttribute("fill", fill));
   }
-  el.setAttribute('data-jx', x.toFixed(2));
-  el.setAttribute('data-jy', y.toFixed(2));
-  el.style.transform = `translate(${x}px, ${y}px)`;
-}
 
-setInterval(()=>{ jitter(handL); jitter(handR); jitter(footL); jitter(footR); }, 300);
+  function setPulse(score) {
+    state.pulse = score;
+    const hr = score === 0 ? 0 : score === 1 ? 80 : 140;
+    els.hrReadout.textContent = score === 0 ? "Absent" : `${hr} bpm`;
+  }
 
-/* ========= Blink (randomized) ========= */
-let blinking = false;
-function doBlink(duration=140){
-  if (blinking) return;
-  blinking = true;
-  lidL.setAttribute('opacity','1');
-  lidR.setAttribute('opacity','1');
-  setTimeout(()=>{
-    lidL.setAttribute('opacity','0');
-    lidR.setAttribute('opacity','0');
-    blinking = false;
-  }, duration);
-}
-function scheduleBlink(){
-  const next = 1200 + Math.random()*6000;
-  setTimeout(()=>{ doBlink(); scheduleBlink(); }, next);
-}
-scheduleBlink();
-function blinkNow(){ doBlink(); }
+  function setMouth() {
+    const showCry = state.crying;
+    const showGrimace = state.grimacing && !showCry;
+    els.mouthNeutral.setAttribute("opacity", showCry || showGrimace ? "0" : "1");
+    els.mouthOpen.setAttribute("opacity", showCry ? "1" : "0");
+    els.mouthGrimace.setAttribute("opacity", showGrimace ? "1" : "0");
+  }
 
-/* ========= Cry (toggle) ========= */
-let crying = false;
-function toggleCry(){
-  crying = !crying;
-  mouthNeutral.style.opacity = crying ? 0 : 1;
-  mouthOpen.style.opacity    = crying ? 1 : 0;
-}
+  function setGrimace(score) {
+    state.grimace = score;
+    if (score === 0) {
+      state.crying = false;
+      state.grimacing = false;
+    }
+    setMouth();
+  }
 
-/* ========= Defaults ========= */
-setAppearance(2);     // start pink
-setRespiration(2);    // normal
-setBreathsPerMin(40); // ~40 bpm is typical newborn rate
+  function setActivity(score) {
+    state.activity = score;
+    els.toneReadout.textContent = TONE_LABELS[score];
+  }
+
+  function setRespiration(score) {
+    state.respiration = score;
+    if (score === 0) {
+      state.breathsPerMin = 0;
+      els.bpm.value = "0";
+      els.bpmVal.textContent = "0";
+      state.crying = false;
+    } else if (state.breathsPerMin === 0) {
+      state.breathsPerMin = score === 1 ? 24 : 40;
+      els.bpm.value = String(state.breathsPerMin);
+      els.bpmVal.textContent = String(state.breathsPerMin);
+    }
+    updateBreathReadout();
+    setMouth();
+  }
+
+  function updateBreathReadout() {
+    if (state.respiration === 0 || state.breathsPerMin === 0) {
+      els.breathReadout.textContent = "Absent";
+    } else if (state.respiration === 1) {
+      els.breathReadout.textContent = `Weak · ${state.breathsPerMin}/min`;
+    } else {
+      els.breathReadout.textContent = `${state.breathsPerMin}/min`;
+    }
+  }
+
+  function interpretationFor(total) {
+    if (total <= 3) return { text: "Severely depressed — needs immediate support", color: "var(--danger)" };
+    if (total <= 6) return { text: "Moderately depressed — needs intervention", color: "var(--warn)" };
+    return { text: "Generally reassuring", color: "var(--ok)" };
+  }
+
+  function updateScoreboard() {
+    const keys = ["appearance", "pulse", "grimace", "activity", "respiration"];
+    const total = keys.reduce((sum, k) => sum + state[k], 0);
+    els.totalScore.textContent = String(total);
+    const interp = interpretationFor(total);
+    els.interpretation.textContent = interp.text;
+
+    els.scoreChips.innerHTML = keys.map((k) => {
+      const letter = k[0].toUpperCase();
+      return `<span class="chip" title="${k}">${letter}${state[k]}</span>`;
+    }).join("");
+
+    keys.forEach((key) => {
+      const desc = document.getElementById(`${key}Desc`);
+      if (desc) desc.textContent = DESCS[key][state[key]];
+      const root = document.querySelector(`.criterion[data-key="${key}"]`);
+      if (!root) return;
+      root.querySelectorAll("button[data-score]").forEach((btn) => {
+        btn.setAttribute("aria-pressed", String(Number(btn.dataset.score) === state[key]));
+      });
+    });
+  }
+
+  function applyScore(key, score) {
+    const n = Math.max(0, Math.min(2, Number(score)));
+    if (key === "appearance") setAppearance(n);
+    else if (key === "pulse") setPulse(n);
+    else if (key === "grimace") setGrimace(n);
+    else if (key === "activity") setActivity(n);
+    else if (key === "respiration") setRespiration(n);
+    updateScoreboard();
+  }
+
+  function setScenario(scores) {
+    Object.entries(scores).forEach(([k, v]) => applyScore(k, v));
+  }
+
+  /* ---- Mouth / cry / stimulus ---- */
+  function toggleCry() {
+    if (state.respiration === 0 && state.grimace < 2) return;
+    state.crying = !state.crying;
+    if (state.crying) state.grimacing = false;
+    setMouth();
+  }
+
+  function stimulate() {
+    state.grimacing = false;
+    state.crying = false;
+    setMouth();
+
+    if (state.grimace === 0) {
+      // no facial change
+      els.faceGroup.animate(
+        [{ transform: "translate(0,0)" }, { transform: "translate(0,2px)" }, { transform: "translate(0,0)" }],
+        { duration: 280, easing: "ease-out" }
+      );
+      return;
+    }
+
+    if (state.grimace === 1) {
+      state.grimacing = true;
+      setMouth();
+      setTimeout(() => {
+        state.grimacing = false;
+        setMouth();
+      }, 900);
+      return;
+    }
+
+    state.crying = true;
+    setMouth();
+    setTimeout(() => {
+      // leave cry on briefly so learners see strong response
+      state.crying = state.respiration === 2 ? true : false;
+      if (state.respiration < 2) setMouth();
+    }, 1200);
+  }
+
+  /* ---- Blink ---- */
+  function doBlink(duration = 140) {
+    if (state.blinking) return;
+    state.blinking = true;
+    els.lidL.setAttribute("opacity", "1");
+    els.lidR.setAttribute("opacity", "1");
+    setTimeout(() => {
+      els.lidL.setAttribute("opacity", "0");
+      els.lidR.setAttribute("opacity", "0");
+      state.blinking = false;
+    }, duration);
+  }
+
+  function scheduleBlink() {
+    if (state.reduceMotion) return;
+    const next = 1400 + Math.random() * 5200;
+    setTimeout(() => {
+      doBlink();
+      scheduleBlink();
+    }, next);
+  }
+
+  /* ---- Animation loop ---- */
+  let last = performance.now();
+
+  function activityPose(score, t) {
+    // limp = arms out / legs floppy; flexed = tucked; active = subtle motion
+    if (score === 0) {
+      return {
+        leftArm: "rotate(18deg)",
+        rightArm: "rotate(-18deg)",
+        leftLeg: "rotate(8deg)",
+        rightLeg: "rotate(-8deg)",
+        jitter: 0.15
+      };
+    }
+    if (score === 1) {
+      return {
+        leftArm: "rotate(-8deg)",
+        rightArm: "rotate(8deg)",
+        leftLeg: "rotate(-4deg)",
+        rightLeg: "rotate(4deg)",
+        jitter: 0.35
+      };
+    }
+    const wiggle = Math.sin(t * 2.2) * 3;
+    return {
+      leftArm: `rotate(${-12 + wiggle}deg)`,
+      rightArm: `rotate(${12 - wiggle}deg)`,
+      leftLeg: `rotate(${-6 + wiggle * 0.4}deg)`,
+      rightLeg: `rotate(${6 - wiggle * 0.4}deg)`,
+      jitter: 0.7
+    };
+  }
+
+  function animate(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+
+    if (!state.reduceMotion) {
+      const bpm = state.respiration === 0 ? 0 : state.breathsPerMin;
+      const freq = bpm / 60;
+      state.breathPhase += dt * freq * Math.PI * 2;
+
+      const depth = [0, 1.2, 3.2][state.respiration];
+      const wave = bpm === 0 ? 0 : Math.sin(state.breathPhase);
+      const scaleY = 1 + (wave * depth) / 100;
+      const rise = wave * depth;
+
+      els.babyGroup.setAttribute("transform", `translate(0 ${(-rise).toFixed(2)})`);
+      els.torso.style.transform = `scale(1, ${scaleY.toFixed(4)})`;
+
+      // Pulse halo
+      const hr = state.pulse === 0 ? 0 : state.pulse === 1 ? 80 : 140;
+      if (hr === 0) {
+        els.pulseHalo.setAttribute("opacity", "0");
+      } else {
+        state.pulsePhase += dt * (hr / 60) * Math.PI * 2;
+        const beat = 0.15 + 0.55 * Math.max(0, Math.sin(state.pulsePhase));
+        els.pulseHalo.setAttribute("opacity", beat.toFixed(3));
+      }
+
+      const pose = activityPose(state.activity, now / 1000);
+      els.leftArm.style.transform = pose.leftArm;
+      els.rightArm.style.transform = pose.rightArm;
+      els.leftLeg.style.transform = pose.leftLeg;
+      els.rightLeg.style.transform = pose.rightLeg;
+
+      // Micro-jitter on extremities (stronger with activity)
+      const j = pose.jitter;
+      extremities.forEach((el, i) => {
+        const x = Math.sin(now / 280 + i) * j;
+        const y = Math.cos(now / 310 + i * 1.3) * j;
+        el.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`;
+      });
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  /* ---- Events ---- */
+  document.getElementById("criteria").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-score]");
+    if (!btn) return;
+    const criterion = btn.closest(".criterion");
+    if (!criterion) return;
+    applyScore(criterion.dataset.key, btn.dataset.score);
+  });
+
+  els.bpm.addEventListener("input", () => {
+    state.breathsPerMin = Number(els.bpm.value);
+    els.bpmVal.textContent = String(state.breathsPerMin);
+    if (state.breathsPerMin === 0 && state.respiration !== 0) applyScore("respiration", 0);
+    else if (state.breathsPerMin > 0 && state.respiration === 0) applyScore("respiration", 1);
+    else updateBreathReadout();
+  });
+
+  els.stimulateBtn.addEventListener("click", stimulate);
+  els.blinkBtn.addEventListener("click", () => doBlink());
+  els.cryBtn.addEventListener("click", toggleCry);
+  els.scenarioPoor.addEventListener("click", () => {
+    state.crying = false;
+    setScenario({ appearance: 0, pulse: 1, grimace: 0, activity: 0, respiration: 1 });
+  });
+  els.scenarioGood.addEventListener("click", () => {
+    state.crying = true;
+    setScenario({ appearance: 2, pulse: 2, grimace: 2, activity: 2, respiration: 2 });
+    setMouth();
+  });
+
+  // Init
+  setAppearance(2);
+  setPulse(2);
+  setGrimace(2);
+  setActivity(2);
+  setRespiration(2);
+  updateScoreboard();
+  scheduleBlink();
+  requestAnimationFrame(animate);
+})();
 </script>
 </body>
 </html>
