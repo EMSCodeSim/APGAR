@@ -1,0 +1,421 @@
+From 9b42794b505d964d3c88442222949ea2c94dd9d2 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sun, 16 Aug 2026 22:15:45 +0000
+Subject: [PATCH] Improve horse-crush scenario teaching path and transport UX
+
+Align required findings with ABC, focused hip/leg/CSM, and core vitals;
+retire parking CSS; sync progress to canonical assessment routes; and make
+transport form promotion reliable beyond desktop-only.
+---
+ HORSE_CRUSH_IMPROVEMENTS_2026-08-16.md | 31 ++++++++++
+ tools/test-horse-crush-phase-plan.js   | 80 ++++++++++++++++++++++++++
+ vitals/horse-crush-scenario.css        | 45 ++-------------
+ vitals/horse-crush-scenario.js         |  4 +-
+ vitals/horse-crush-ui-fix.js           | 19 +++---
+ vitals/horse-encounter-validation.js   | 14 ++---
+ vitals/scenario-definitions.js         |  6 +-
+ vitals/scenario-phase-model.js         |  4 +-
+ vitals/scenario-progress-sync.js       | 13 +++--
+ 9 files changed, 150 insertions(+), 66 deletions(-)
+ create mode 100644 HORSE_CRUSH_IMPROVEMENTS_2026-08-16.md
+ create mode 100644 tools/test-horse-crush-phase-plan.js
+
+diff --git a/HORSE_CRUSH_IMPROVEMENTS_2026-08-16.md b/HORSE_CRUSH_IMPROVEMENTS_2026-08-16.md
+new file mode 100644
+index 0000000..8b2e2e4
+--- /dev/null
++++ b/HORSE_CRUSH_IMPROVEMENTS_2026-08-16.md
+@@ -0,0 +1,31 @@
++# Horse-Crush Scenario Improvements — 2026.08.16
++
++## What changed
++- Required horse-crush findings now match the teaching path: ABC, focused hip/leg/CSM, and core vitals.
++- Progress labels no longer call auto-start “Arrival decision”; they say **On-scene arrival**.
++- Encounter cues prioritize focused trauma exam before packaging/movement.
++- Horse progress sync points at canonical assessment routes instead of legacy airway/breathing/perfusion pages.
++- Retired parking/map-arrival CSS was removed.
++- Transport form promotion works for the horse scenario generally (not desktop-only) and uses the shared 980px desktop breakpoint.
++
++## Files
++- `vitals/scenario-definitions.js`
++- `vitals/scenario-phase-model.js`
++- `vitals/scenario-progress-sync.js`
++- `vitals/horse-crush-scenario.css`
++- `vitals/horse-crush-scenario.js`
++- `vitals/horse-crush-ui-fix.js`
++- `vitals/horse-encounter-validation.js`
++- `tools/test-horse-crush-phase-plan.js`
++
++## Verify
++```bash
++node tools/test-horse-crush-phase-plan.js
++node tools/test-scenario-phases.js
++node tools/test-scenario-definitions.js
++node tools/test-rapid-primary-assessment.js
++node tools/test-scenario-deployment-contract.js
++```
++
++Open:
++`/vitals/visual-patient.html?case=horse_crush&training=assessment&reset=1`
+diff --git a/tools/test-horse-crush-phase-plan.js b/tools/test-horse-crush-phase-plan.js
+new file mode 100644
+index 0000000..b6234a1
+--- /dev/null
++++ b/tools/test-horse-crush-phase-plan.js
+@@ -0,0 +1,80 @@
++'use strict';
++
++const assert = require('assert');
++const fs = require('fs');
++const path = require('path');
++const vm = require('vm');
++
++const window = {};
++const context = { window, Date, Object, Array, String, Boolean, Number, Math };
++vm.runInNewContext(fs.readFileSync(path.join(process.cwd(), 'vitals/scenario-definitions.js'), 'utf8'), context, { filename: 'vitals/scenario-definitions.js' });
++vm.runInNewContext(fs.readFileSync(path.join(process.cwd(), 'vitals/scenario-phase-model.js'), 'utf8'), context, { filename: 'vitals/scenario-phase-model.js' });
++
++const defs = window.EMSCodeSimScenarioDefinitions;
++const phases = window.EMSCodeSimScenarioPhases;
++assert(defs && phases, 'Horse phase dependencies must load.');
++
++const plan = defs.PHASE_PLANS.horse_crush;
++assert(plan, 'horse_crush phase plan must exist');
++['airway','breathing','perfusion','pelvis_hip','left_leg','distal_csm','pulse','blood_pressure','respirations','spo2']
++  .forEach(key => assert(plan.requiredFindings.includes(key), `horse_crush must require ${key}`));
++assert.strictEqual(phases.labelFor('arrival_parking'), 'On-scene arrival');
++assert.strictEqual(phases.classification('horse_crush', 'pelvis_hip'), 'required');
++assert.strictEqual(phases.classification('horse_crush', 'pain'), 'appropriate');
++
++const at = second => `2026-08-16T10:00:${String(second).padStart(2, '0')}.000Z`;
++const finding = recordedAt => ({ value: 'Recorded', recordedAt });
++const incomplete = {
++  id: 'horse_crush',
++  scenarioId: 'horse_crush',
++  findings: {
++    arrival_parking: finding(at(1)),
++    airway: finding(at(2)),
++    breathing: finding(at(3)),
++    perfusion: finding(at(4))
++  },
++  treatments: [],
++  reassessments: [],
++  impressions: {},
++  documentation: {}
++};
++
++let result = phases.evaluate(incomplete);
++assert.strictEqual(result.phases.find(phase => phase.id === 'scene').label, 'On-scene arrival');
++assert.strictEqual(result.phases.find(phase => phase.id === 'primary').complete, true);
++assert.strictEqual(result.phases.find(phase => phase.id === 'focused').complete, false);
++assert.strictEqual(result.essentialComplete, false);
++
++const complete = {
++  ...incomplete,
++  findings: {
++    ...incomplete.findings,
++    pelvis_hip: finding(at(5)),
++    left_leg: finding(at(6)),
++    distal_csm: finding(at(7)),
++    pulse: finding(at(8)),
++    blood_pressure: finding(at(9)),
++    respirations: finding(at(10)),
++    spo2: finding(at(11))
++  },
++  treatments: [{ treatment: 'manual_leg_support', recordedAt: at(20) }],
++  reassessments: [{ response: 'Distal CSM unchanged', assessment: 'distal_csm', recordedAt: at(30) }],
++  impressions: { primary: 'Isolated left hip injury', action: 'Prompt trauma transport' },
++  documentation: { handoff: 'MIST handoff complete', transportPriority: 'Prompt trauma transport' }
++};
++
++result = phases.evaluate(complete);
++assert.strictEqual(result.phases.find(phase => phase.id === 'focused').complete, true);
++assert.strictEqual(result.phases.find(phase => phase.id === 'vitals').complete, true);
++assert.strictEqual(result.essentialComplete, true, 'Horse essentials should complete after ABC, focused exam, vitals, treatment, reassessment, transport, and handoff.');
++
++const css = fs.readFileSync(path.join(process.cwd(), 'vitals/horse-crush-scenario.css'), 'utf8');
++assert(!css.includes('data-horse-parking'), 'Retired parking selectors must not remain in horse CSS');
++assert(!css.includes('.horse-parking-options'), 'Retired parking option styles must not remain in horse CSS');
++
++const progressSync = fs.readFileSync(path.join(process.cwd(), 'vitals/scenario-progress-sync.js'), 'utf8');
++assert(progressSync.includes('/vitals/visual-airway-assessment.html'), 'Horse progress sync must use canonical airway route');
++assert(progressSync.includes('/vitals/respiratory-assessment-visual.html'), 'Horse progress sync must use canonical breathing route');
++assert(progressSync.includes('/vitals/distal-csm-assessment.html'), 'Horse progress sync must use canonical distal CSM route');
++
++console.log('Horse-crush phase plan, labels, and progress-sync checks passed.');
+diff --git a/vitals/horse-crush-scenario.css b/vitals/horse-crush-scenario.css
+index 6879cba..94fdaba 100644
+--- a/vitals/horse-crush-scenario.css
++++ b/vitals/horse-crush-scenario.css
+@@ -1,18 +1,6 @@
+ @import url('/vitals/mobile-simulator-upgrade.css?v=3000');
+-.horse-arrival-card{margin:14px 16px 92px;padding:16px;border:1px solid #cbd5e1;border-radius:18px;background:#fff;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+-.horse-arrival-card.complete{border-color:#86efac;background:#f0fdf4}
+-.horse-arrival-head,.horse-arrival-complete-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+-.horse-arrival-head span,.horse-arrival-complete-head span{display:block;color:#0f766e;font-size:.74rem;font-weight:800;letter-spacing:.08em}
+-.horse-arrival-head h2{margin:3px 0 0;font-size:1.22rem}
+-.horse-arrival-head em{font-style:normal;font-size:.78rem;font-weight:700;color:#166534;background:#dcfce7;border-radius:999px;padding:6px 9px;white-space:nowrap}
+-.horse-parking-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+-.horse-parking-options button{display:flex;flex-direction:column;gap:5px;text-align:left;padding:13px;border:1px solid #cbd5e1;border-radius:14px;background:#f8fafc;color:#0f172a}
+-.horse-parking-options button:hover,.horse-parking-options button:focus-visible{border-color:#0f766e;background:#ecfeff}
+-.horse-parking-options small{color:#64748b}
+-.horse-parking-feedback{margin-top:12px;padding:11px;border-radius:12px;background:#eff6ff;color:#1e3a8a;font-weight:650}
+-.horse-arrival-card blockquote{margin:10px 0;padding:12px 14px;border-left:4px solid #0f766e;background:#fff;border-radius:0 12px 12px 0;color:#0f172a}
+-.horse-arrival-next,.horse-parking-summary{margin:8px 0 0}
+-.patient-stage.horse-arrival-map #patientImage{object-fit:cover}
++/* Retired parking / map-arrival gate styles intentionally removed.
++   The horse scenario begins on the patient photo with auto-saved on-scene arrival. */
+ 
+ .horse-assessment-section{margin-top:14px}
+ .horse-assessment-section .assessment-section-title em{font-style:normal;font-weight:800;color:#0f766e}
+@@ -45,31 +33,12 @@
+ .horse-movement-feedback{margin:0;padding:11px;border-radius:12px;background:#eff6ff;color:#1e3a8a;font-weight:700}
+ 
+ @media(max-width:640px){
+-  .horse-arrival-card{margin:10px 10px 92px;padding:13px}
+-  .horse-parking-options,.horse-exam-grid{grid-template-columns:1fr}
+-  .horse-arrival-head{flex-direction:column}
++  .horse-exam-grid{grid-template-columns:1fr}
+   .horse-exam-actions{flex-direction:column}
+ }
+ 
+ /* Horse-crush mobile scenario cleanup — UI 1.12 */
+-.horse-arrival-card{margin:10px 0 12px}
+ @media(max-width:600px){
+-  .horse-arrival-card{
+-    margin:8px 0 10px;
+-    padding:11px;
+-    border-radius:14px;
+-    box-shadow:none;
+-  }
+-  .horse-arrival-head,.horse-arrival-complete-head{gap:7px;margin-bottom:7px}
+-  .horse-arrival-head h2{font-size:1.02rem;line-height:1.2}
+-  .horse-arrival-head em{padding:4px 7px;font-size:.66rem}
+-  .horse-arrival-card>p,.horse-arrival-card blockquote{font-size:.79rem;line-height:1.4}
+-  .horse-arrival-card blockquote{margin:7px 0;padding:9px 10px}
+-  .horse-parking-options{grid-template-columns:1fr;gap:7px;margin-top:9px}
+-  .horse-parking-options button{min-height:52px;padding:9px 10px;border-radius:11px}
+-  .horse-parking-options small{font-size:.66rem}
+-  .horse-parking-feedback{margin-top:8px;padding:8px;font-size:.76rem}
+-
+   .horse-assessment-section{margin-top:8px}
+   .horse-exam-grid{grid-template-columns:1fr;gap:6px}
+   .horse-exam-button{min-height:52px;padding:8px 9px;border-radius:11px}
+@@ -133,13 +102,7 @@
+   }
+ }
+ 
+-/* Arrival card must stay fully usable inside the clinical workspace. */
+-body.horse-arrival-pending .patient-control-column{overflow-y:auto!important;overflow-x:visible!important}
+-body.horse-arrival-pending #horseArrivalDecision{display:block!important;width:100%!important;max-width:none!important;min-height:0!important;max-height:none!important;margin:0 0 12px!important;padding:16px!important;overflow:visible!important;position:relative!important}
+-body.horse-arrival-pending #horseArrivalDecision .horse-parking-options{grid-template-columns:1fr!important;gap:10px!important}
+-body.horse-arrival-pending #horseArrivalDecision [data-horse-parking]{display:flex!important;width:100%!important;min-height:64px!important;padding:12px 14px!important;pointer-events:auto!important;touch-action:manipulation!important;cursor:pointer!important}
+-@media(max-width:979px){body.horse-arrival-pending #horseArrivalDecision{padding:14px!important}body.horse-arrival-pending #horseArrivalDecision [data-horse-parking]{min-height:58px!important}}
+-
++/* Arrival parking gate retired — horse begins on the patient photo. */
+ 
+ /* ABC desktop placement — keep the patient photo clear and use the right clinical screen */
+ @media (min-width:980px){
+diff --git a/vitals/horse-crush-scenario.js b/vitals/horse-crush-scenario.js
+index 7880be2..f42c14a 100644
+--- a/vitals/horse-crush-scenario.js
++++ b/vitals/horse-crush-scenario.js
+@@ -143,11 +143,11 @@
+ 
+     if (!has('arrival_parking')) {
+       saveFinding('arrival_parking', 'Ambulance positioned safely near the south barn', {
+-        label: 'Scene arrival',
++        label: 'On-scene arrival',
+         selected: 'scenario_start',
+         decisionClass: 'appropriate',
+         normality: 'normal',
+-        details: 'The ambulance is positioned for patient access with the driveway and exit path clear.',
++        details: 'The ambulance is positioned for patient access with the driveway and exit path clear. Begin with the patient.',
+         source: 'scenario-start',
+         suppressInfoUpdate: true
+       });
+diff --git a/vitals/horse-crush-ui-fix.js b/vitals/horse-crush-ui-fix.js
+index 6e7af80..a20694d 100644
+--- a/vitals/horse-crush-ui-fix.js
++++ b/vitals/horse-crush-ui-fix.js
+@@ -2,9 +2,10 @@
+   'use strict';
+ 
+   const CASE_ID = 'horse_crush';
+-  const VERSION = '2026.08.16.6';
++  const VERSION = '2026.08.16.7';
+   let lastAbcCommitAt = 0;
+   let lastAbcCommitToken = '';
++  const DESKTOP_MIN_WIDTH = 980;
+   const FOCUSED_EXAMS = new Set([
+     'head_exam',
+     'neck_back',
+@@ -62,7 +63,7 @@
+   }
+ 
+   function isHorseScenario() { return activeCase() === CASE_ID; }
+-  function isDesktopHorse() { return isHorseScenario() && window.matchMedia?.('(min-width: 961px)')?.matches === true; }
++  function isDesktopHorse() { return isHorseScenario() && window.matchMedia?.(`(min-width: ${DESKTOP_MIN_WIDTH}px)`)?.matches === true; }
+   function record() {
+     return window.EMSCodeSimScenarioSession?.active?.(CASE_ID)
+       || window.EMSCodeSimPatientRecord?.active?.()
+@@ -149,14 +150,14 @@
+   }
+ 
+   function showPromotedTreatmentPanel(title = 'Transport') {
+-    if (!isDesktopHorse()) return false;
++    if (!isHorseScenario()) return false;
+     const sheet = document.getElementById('actionSheet');
+     const panel = document.getElementById('treatmentPanel');
+-    if (!sheet || !panel) return false;
++    if (!panel) return false;
+     closeScenarioControlOverlay();
+     document.querySelectorAll('.vp-panel').forEach(item => { item.hidden = item !== panel; });
+     panel.hidden = false;
+-    sheet.hidden = false;
++    if (sheet) sheet.hidden = false;
+     const sheetTitle = document.getElementById('sheetTitle');
+     if (sheetTitle) sheetTitle.textContent = title;
+     document.querySelectorAll('.bottom-nav button').forEach(button => button.classList.toggle('active', button.dataset.panel === 'treatmentPanel'));
+@@ -166,9 +167,10 @@
+   }
+ 
+   function promoteHiddenTransportForm() {
+-    if (!isDesktopHorse()) return false;
++    if (!isHorseScenario()) return false;
+     const hiddenQuestion = document.getElementById('horseClinicalQuestionBox');
+-    const form = hiddenQuestion?.querySelector('form.horse-transport-selection-form');
++    const form = document.querySelector('form.horse-transport-selection-form')
++      || hiddenQuestion?.querySelector('form.horse-transport-selection-form');
+     const tools = document.getElementById('treatmentTools');
+     if (!form || !tools) return false;
+     if (form.closest('#treatmentTools')) return showPromotedTreatmentPanel('Transport');
+@@ -179,6 +181,7 @@
+     if (!host) return false;
+     if (detail && detail !== hiddenQuestion) host.appendChild(detail); else host.appendChild(form);
+     hiddenQuestion?.classList.remove('active', 'treatment-active');
++    hiddenQuestion?.setAttribute('hidden', '');
+     showPromotedTreatmentPanel('Transport');
+     return true;
+   }
+@@ -381,7 +384,7 @@
+   }, true);
+ 
+   document.addEventListener('click', event => {
+-    if (!isDesktopHorse()) return;
++    if (!isHorseScenario()) return;
+     if (!event.target.closest?.('#handoffFromProgress, #transportScenarioQuick, #horseOpenTransport')) return;
+     scheduleTransportPromotion();
+   });
+diff --git a/vitals/horse-encounter-validation.js b/vitals/horse-encounter-validation.js
+index ab5230e..2c096e2 100644
+--- a/vitals/horse-encounter-validation.js
++++ b/vitals/horse-encounter-validation.js
+@@ -71,20 +71,20 @@
+   function handoffComplete(){const r=record();return Boolean(finding('handoff')||finding('patient_handoff')||r?.documentation?.handoff||r?.handoff)}
+ 
+   function milestones(){return [
+-    ['arrival','Arrival',Boolean(finding('arrival_parking'))],['abc','ABC',abcComplete()],['vitals','Vitals',vitalsComplete()],['history','History',historyComplete()],['focused','Focused exam',focusedComplete()],['treatment','Treatment',treatmentComplete()],['reassessment','Reassessment',reassessmentComplete()],['transport','Transport',transportComplete()],['handoff','Handoff',handoffComplete()]
++    ['arrival','On scene',Boolean(finding('arrival_parking'))],['abc','ABC',abcComplete()],['focused','Focused exam',focusedComplete()],['vitals','Vitals',vitalsComplete()],['history','History',historyComplete()],['treatment','Treatment',treatmentComplete()],['reassessment','Reassessment',reassessmentComplete()],['transport','Transport',transportComplete()],['handoff','Handoff',handoffComplete()]
+   ]}
+ 
+   function nextCue(){
+     const pending=pendingReassessment();
+     if(pending.length)return {urgent:true,text:pending[0].cue};
+     if(!abcComplete())return {text:'Complete the primary ABC assessment before moving deeper into the encounter.'};
++    if(!focusedComplete())return {text:'Finish the focused trauma exam, including the injured hip/leg and distal CSM, before committing to movement.'};
+     if(!vitalsComplete())return {text:'Gather enough objective vital data to establish a baseline.'};
+-    if(!historyComplete())return {text:'Complete the patient history and pain assessment.'};
+-    if(!focusedComplete())return {text:'Finish the focused trauma exam, including the injured leg and distal CSM.'};
+-    if(!treatmentComplete())return {text:'Choose treatment based on the findings you have discovered.'};
+-    if(!reassessmentComplete())return {urgent:true,text:'Treatment is complete. Reassess the findings your treatment could have changed.'};
+-    if(!transportComplete())return {text:'Make and document the transport priority and destination decision.'};
+-    if(!handoffComplete())return {text:'Complete the receiving-facility handoff using the findings and care you documented.'};
++    if(!historyComplete())return {text:'Ask enough history to support packaging, pain management, and hospital handoff.'};
++    if(!treatmentComplete())return {text:'Support the injured leg in a position of comfort and choose a packaging plan.'};
++    if(!reassessmentComplete())return {urgent:true,text:'Treatment is complete. Reassess pain and distal CSM after treatment or movement.'};
++    if(!transportComplete())return {text:'Document a transport priority and destination based on your findings.'};
++    if(!handoffComplete())return {text:'Deliver a hospital handoff from findings you actually documented.'};
+     return {text:'Encounter complete. Grade the scenario to review clinical decisions and sequence.'};
+   }
+ 
+diff --git a/vitals/scenario-definitions.js b/vitals/scenario-definitions.js
+index ce026d9..8e6d550 100644
+--- a/vitals/scenario-definitions.js
++++ b/vitals/scenario-definitions.js
+@@ -205,8 +205,10 @@
+       notIndicatedFindings: ['motor_sensory','chest_assessment','abdominal_assessment','trauma_assessment','rule_of_nines']
+     },
+     horse_crush: {
+-      requiredFindings: ['arrival_parking'],
+-      appropriateFindings: ['airway','breathing','perfusion','mental_status','blood_pressure','pulse','respirations','spo2','neck_back','chest_assessment','abdominal_assessment','pelvis_hip','left_leg','distal_csm','pain','pupils','skin','sample','trauma_assessment'],
++      // Teach the bedside path: scene → ABC → focused hip/leg/CSM → core vitals.
++      // Arrival parking is auto-established at scenario start (no learner parking gate).
++      requiredFindings: ['arrival_parking','airway','breathing','perfusion','pelvis_hip','left_leg','distal_csm','pulse','blood_pressure','respirations','spo2'],
++      appropriateFindings: ['mental_status','neck_back','chest_assessment','abdominal_assessment','pain','pupils','skin','sample','trauma_assessment','movement_plan'],
+       optionalFindings: ['blood_glucose','temperature','breath_sounds','motor_sensory'],
+       notIndicatedFindings: ['pediatric_assessment_triangle','rule_of_nines']
+     }
+diff --git a/vitals/scenario-phase-model.js b/vitals/scenario-phase-model.js
+index c1cf1f6..b5d21d7 100644
+--- a/vitals/scenario-phase-model.js
++++ b/vitals/scenario-phase-model.js
+@@ -9,7 +9,7 @@
+     blood_glucose: 'Blood glucose', temperature: 'Temperature', skin: 'Skin signs', mental_status: 'Mental status', pupils: 'Pupils',
+     motor_sensory: 'Motor and sensory', sample: 'SAMPLE history', pain: 'Pain / OPQRST', chest_assessment: 'Chest assessment',
+     trauma_assessment: 'Rapid trauma assessment', abdominal_assessment: 'Abdominal assessment', pediatric_assessment_triangle: 'Pediatric Assessment Triangle',
+-    rule_of_nines: 'Rule of Nines', arrival_parking: 'Ambulance parking decision', bls_handoff: 'BLS engine handoff',
++    rule_of_nines: 'Rule of Nines', arrival_parking: 'On-scene arrival', bls_handoff: 'BLS engine handoff',
+     neck_back: 'Neck and back exam', pelvis_hip: 'Pelvis and hip exam', left_leg: 'Left-leg exam', distal_csm: 'Distal circulation, sensation, and movement',
+     movement_method: 'Movement method', leg_stabilization: 'Leg stabilization plan', movement_plan: 'Movement and packaging plan'
+   };
+@@ -114,7 +114,7 @@
+     const sceneComplete = sceneRequired ? has(record, 'scene_size_up') : has(record, 'arrival_parking');
+ 
+     const phases = [
+-      { id: 'scene', label: sceneRequired ? 'Scene size-up' : 'Arrival decision', requirement: sceneRequired ? 'Required' : 'Scenario-specific', complete: sceneComplete, started: sceneComplete },
++      { id: 'scene', label: sceneRequired ? 'Scene size-up' : 'On-scene arrival', requirement: sceneRequired ? 'Required' : 'Established at start', complete: sceneComplete, started: sceneComplete },
+       { id: 'primary', label: 'Primary assessment', requirement: 'Required', complete: primary.complete, started: primary.completed > 0, detail: `${primary.completed} of ${primary.total}` },
+       { id: 'focused', label: 'History & focused assessment', requirement: requiredFocused.length ? 'Required + clinically appropriate' : 'Clinically appropriate', complete: focused.complete, started: [...requiredFocused, ...appropriateFocused].some(key => has(record, key)), detail: requiredFocused.length ? `${focused.completed} of ${focused.total} required` : 'Use when indicated' },
+       { id: 'vitals', label: 'Initial vitals', requirement: 'Required + clinically appropriate', complete: vitals.complete, started: [...requiredVitals, ...appropriateVitals].some(key => has(record, key)), detail: `${vitals.completed} of ${vitals.total} required` },
+diff --git a/vitals/scenario-progress-sync.js b/vitals/scenario-progress-sync.js
+index 2519e7d..0947bb3 100644
+--- a/vitals/scenario-progress-sync.js
++++ b/vitals/scenario-progress-sync.js
+@@ -12,7 +12,8 @@
+     hypoglycemia: ['/vitals/visual-patient.html','/vitals/airway-assessment.html','/vitals/breathing-assessment.html','/vitals/perfusion-assessment.html','/vitals/avpu-scenario.html','/vitals/pulse-scenario.html','/vitals/bp-scenario.html','/vitals/respiratory-rate-scenario.html','/vitals/pulse-ox-scenario.html','/vitals/bgl-scenario.html','/vitals/sample-history.html','/vitals/clinical-impression.html','/vitals/treatment-reassessment.html','/vitals/pcr-handoff.html'],
+     trauma: ['/vitals/visual-patient.html','/vitals/airway-assessment.html','/vitals/breathing-assessment.html','/vitals/perfusion-assessment.html','/vitals/respiratory-rate-scenario.html','/vitals/breath-sounds-scenario.html','/vitals/pulse-scenario.html','/vitals/bp-scenario.html','/vitals/pulse-ox-scenario.html','/vitals/chest-assessment.html','/vitals/trauma-assessment.html','/vitals/abdominal-assessment.html','/vitals/clinical-impression.html','/vitals/treatment-reassessment.html','/vitals/pcr-handoff.html'],
+     pediatric: ['/vitals/visual-patient.html','/vitals/pediatric-assessment-triangle.html','/vitals/airway-assessment.html','/vitals/breathing-assessment.html','/vitals/perfusion-assessment.html','/vitals/respiratory-rate-scenario.html','/vitals/breath-sounds-scenario.html','/vitals/pulse-scenario.html','/vitals/bp-scenario.html','/vitals/pulse-ox-scenario.html','/vitals/sample-history.html','/vitals/clinical-impression.html','/vitals/treatment-reassessment.html','/vitals/pcr-handoff.html'],
+-    horse_crush: ['/vitals/visual-patient.html','/vitals/airway-assessment.html','/vitals/breathing-assessment.html','/vitals/perfusion-assessment.html','/vitals/respiratory-rate-scenario.html','/vitals/pulse-scenario.html','/vitals/bp-scenario.html','/vitals/pulse-ox-scenario.html','/vitals/pain-opqrst.html','/vitals/clinical-impression.html','/vitals/treatment-reassessment.html','/vitals/pcr-handoff.html']
++    // Horse-crush uses canonical assessment routes (see docs/SCENARIO_TOOL_CANONICALIZATION.md).
++    horse_crush: ['/vitals/visual-patient.html','/vitals/visual-airway-assessment.html','/vitals/respiratory-assessment-visual.html','/vitals/distal-csm-assessment.html','/vitals/respiratory-rate-scenario.html','/vitals/pulse-scenario.html','/vitals/bp-scenario.html','/vitals/pulse-ox-scenario.html','/vitals/pain-opqrst.html','/vitals/clinical-impression.html','/vitals/treatment-reassessment.html','/vitals/pcr-handoff.html']
+   };
+ 
+   const scenarioId = record.scenarioId || record.id;
+@@ -65,9 +66,12 @@
+   function completeForPath(path) {
+     switch (path) {
+       case '/vitals/visual-patient.html': return state.phaseProgress.scene;
+-      case '/vitals/airway-assessment.html': return has('airway');
+-      case '/vitals/breathing-assessment.html': return has('breathing');
+-      case '/vitals/perfusion-assessment.html': return has('perfusion');
++      case '/vitals/airway-assessment.html':
++      case '/vitals/visual-airway-assessment.html': return has('airway');
++      case '/vitals/breathing-assessment.html':
++      case '/vitals/respiratory-assessment-visual.html': return has('breathing');
++      case '/vitals/perfusion-assessment.html':
++      case '/vitals/distal-csm-assessment.html': return has('perfusion') || has('distal_csm');
+       case '/vitals/respiratory-rate-scenario.html': return has('respirations');
+       case '/vitals/breath-sounds-scenario.html': return has('breath_sounds');
+       case '/vitals/pulse-scenario.html': return has('pulse');
+@@ -80,6 +84,7 @@
+       case '/vitals/trauma-assessment.html': return has('trauma_assessment');
+       case '/vitals/abdominal-assessment.html': return has('abdominal_assessment');
+       case '/vitals/pediatric-assessment-triangle.html': return has('pediatric_assessment_triangle');
++      case '/vitals/pain-opqrst.html': return has('pain');
+       case '/vitals/sample-history.html': return has('sample') || Object.keys(record.history || {}).length > 0;
+       case '/vitals/clinical-impression.html': return state.phaseProgress.impression && state.phaseProgress.transport;
+       case '/vitals/treatment-reassessment.html': return state.phaseProgress.treatment && state.phaseProgress.reassessment;
+-- 
+2.43.0
+
