@@ -2,7 +2,7 @@
 
 Interactive newborn APGAR trainer for EMS and clinical education.
 
-**Live:** [Open the APGAR trainer](https://cdn.jsdelivr.net/gh/EMSCodeSim/APGAR@main/index.html) (works on phone).
+**Live:** [Open the APGAR trainer](https://htmlpreview.github.io/?https://raw.githubusercontent.com/EMSCodeSim/APGAR/main/index.html) (works on phone).
 
 ## Phone use
 
