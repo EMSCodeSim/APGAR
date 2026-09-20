@@ -378,6 +378,92 @@
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
+
+  /* Phone-first scenario controls */
+  @media (max-width: 700px) {
+    .page {
+      width: min(100%, calc(100% - 16px));
+      padding: 16px 0 calc(108px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .brand {
+      font-size: clamp(1.7rem, 7vw, 2.2rem);
+    }
+
+    .lede {
+      font-size: 0.98rem;
+    }
+
+    .stage-wrap {
+      position: static;
+      padding: 10px;
+    }
+
+    .seg {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .seg button {
+      min-height: 48px;
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .panel.scenarios-panel {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      margin: 0;
+      border-radius: 18px 18px 0 0;
+      border: 1px solid rgba(201, 214, 220, 0.95);
+      border-bottom: 0;
+      box-shadow: 0 -12px 32px rgba(26, 43, 51, 0.16);
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(14px);
+    }
+
+    .panel.scenarios-panel h2 {
+      font-size: 1rem;
+      margin-bottom: 2px;
+    }
+
+    .panel.scenarios-panel .hint {
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+    }
+
+    .panel.scenarios-panel .tools {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .panel.scenarios-panel .tools button {
+      min-height: 48px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      touch-action: manipulation;
+    }
+
+    .panel.scenarios-panel .tools button[aria-pressed="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .tools button,
+    .stimulus {
+      min-height: 48px;
+      touch-action: manipulation;
+    }
+  }
 </style>
 </head>
 <body>
@@ -555,9 +641,16 @@
           <div class="tools">
             <button type="button" id="blinkBtn">Blink</button>
             <button type="button" id="cryBtn">Toggle cry</button>
-            <button type="button" id="scenarioPoor">Scenario: distressed</button>
-            <button type="button" id="scenarioModerate">Scenario: moderate</button>
-            <button type="button" id="scenarioGood">Scenario: vigorous</button>
+          </div>
+        </div>
+
+        <div class="panel scenarios-panel">
+          <h2>Scenarios</h2>
+          <p class="hint">One-tap presets for recognition practice.</p>
+          <div class="tools" role="group" aria-label="APGAR demo scenarios">
+            <button type="button" id="scenarioPoor" data-scenario="distressed">Distressed</button>
+            <button type="button" id="scenarioModerate" data-scenario="moderate">Moderate</button>
+            <button type="button" id="scenarioGood" data-scenario="vigorous" aria-pressed="true">Vigorous</button>
           </div>
         </div>
 
@@ -796,6 +889,10 @@
     setRespiration(scores.respiration, { forceBreaths: scores.breathsPerMin });
     setMouth();
     updateScoreboard();
+
+    document.querySelectorAll(".scenarios-panel [data-scenario]").forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(btn.dataset.scenario === preset));
+    });
   }
 
   /* ---- Mouth / cry / stimulus ---- */
