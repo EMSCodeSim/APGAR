@@ -2,7 +2,11 @@
 
 Interactive newborn APGAR trainer for EMS and clinical education.
 
-Open `index.html` in a browser. Adjust **Appearance**, **Pulse**, **Grimace**, **Activity**, and **Respiration** (each 0–2) and watch the baby’s color, tone, breathing, heart-rate cue, and reflex response update live.
+**Live:** [Open the APGAR trainer](https://cdn.jsdelivr.net/gh/EMSCodeSim/APGAR@main/index.html) (works on phone).
+
+## Phone use
+
+On phones, Distressed / Moderate / Vigorous sit in a sticky bottom **Scenarios** dock with large tap targets. Score criteria stack for one-thumb use.
 
 ## Features
 
