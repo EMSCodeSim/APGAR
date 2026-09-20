@@ -1,0 +1,574 @@
+/* EMSCodeSim phone scenario shell — UI 4.0
+   Single phone source of truth for visual-patient on ≤979px.
+   Desktop (≥980px) is untouched. */
+
+@media (max-width: 979px) {
+  :root {
+    --phone-nav-h: calc(64px + env(safe-area-inset-bottom, 0px));
+    --phone-top-h: calc(52px + env(safe-area-inset-top, 0px));
+    --phone-ink: #e8f2f8;
+    --phone-muted: #9bb4c4;
+    --phone-line: #2d5368;
+    --phone-panel: #0b1d2c;
+    --phone-panel-2: #10283a;
+    --phone-accent: #4fb3ff;
+    --phone-ok: #55c990;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: #06131f;
+    overscroll-behavior-y: none;
+    overflow-x: hidden;
+  }
+
+  body.mobile-scenario-shell {
+    padding: 0;
+  }
+
+  /* —— Top chrome —— */
+  body.mobile-scenario-shell .vp-shell {
+    width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+    padding: 0 0 var(--phone-nav-h);
+  }
+
+  body.mobile-scenario-shell .vp-top {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    min-height: var(--phone-top-h);
+    margin: 0;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) 10px 8px;
+    background: rgba(6, 19, 31, 0.97);
+    border-bottom: 1px solid var(--phone-line);
+    backdrop-filter: blur(14px);
+  }
+
+  body.mobile-scenario-shell .scenario-menu-button {
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  body.mobile-scenario-shell .scenario-menu-button small { display: none; }
+  body.mobile-scenario-shell .scenario-menu-button span { font-size: 1.5rem; }
+
+  body.mobile-scenario-shell .title-wrap p:first-child,
+  body.mobile-scenario-shell .title-wrap #scene,
+  body.mobile-scenario-shell #patientClockStatus,
+  body.mobile-scenario-shell .scenario-build-stamp-dark {
+    display: none !important;
+  }
+
+  body.mobile-scenario-shell .vp-top h1 {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.2;
+    color: #fff;
+  }
+
+  body.mobile-scenario-shell .vp-timer {
+    min-width: 76px;
+    padding: 6px 8px;
+    border-radius: 12px;
+  }
+
+  body.mobile-scenario-shell .vp-timer #modeBadge { font-size: 0.55rem; }
+  body.mobile-scenario-shell .vp-timer #timer { font-size: 0.98rem; }
+
+  /* Fold End/Reset into menu on phone — reclaim first viewport */
+  body.mobile-scenario-shell .scenario-quick-controls {
+    display: none !important;
+  }
+
+  /* —— Patient photo —— */
+  body.mobile-scenario-shell .scenario-hero-layout,
+  body.mobile-scenario-shell .patient-desktop-workspace {
+    display: block;
+  }
+
+  body.mobile-scenario-shell .patient-stage {
+    width: calc(100% - 16px);
+    height: min(34dvh, 260px);
+    min-height: 180px;
+    max-height: 280px;
+    margin: 8px 8px 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0b1d2c;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  }
+
+  body.mobile-scenario-shell .patient-stage img#patientImage {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    object-fit: cover;
+    object-position: center top;
+  }
+
+  body.mobile-scenario-shell .patient-stage:after {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0) 70%, rgba(3, 12, 20, 0.28));
+  }
+
+  /* —— Clinical column under photo —— */
+  body.mobile-scenario-shell .patient-control-column {
+    display: grid;
+    gap: 8px;
+    margin: 8px 8px 12px;
+  }
+
+  body.mobile-scenario-shell .info-update-window {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 12px 12px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--phone-line);
+    border-left: 4px solid var(--phone-accent);
+    background: var(--phone-panel);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  body.mobile-scenario-shell .info-update-window > strong,
+  body.mobile-scenario-shell #infoUpdateTitle {
+    font-size: 1.02rem;
+    color: #fff;
+  }
+
+  body.mobile-scenario-shell .info-update-window > p,
+  body.mobile-scenario-shell #infoUpdateText,
+  body.mobile-scenario-shell .communication-workspace #infoUpdateText {
+    margin: 6px 0 0;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    max-height: 5.8em;
+    overflow: auto;
+    color: var(--phone-ink);
+  }
+
+  body.mobile-scenario-shell .info-update-voice-controls { display: none !important; }
+
+  body.mobile-scenario-shell .info-update-controls button,
+  body.mobile-scenario-shell .info-update-head-actions button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  body.mobile-scenario-shell .info-update-quick-reply {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    border-radius: 12px;
+  }
+
+  body.mobile-scenario-shell .persistent-clinical-bar,
+  body.mobile-scenario-shell .desktop-patient-monitor {
+    display: none !important;
+  }
+
+  /* —— Bottom domain nav —— */
+  body.mobile-scenario-shell .bottom-nav {
+    position: fixed;
+    z-index: 80;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 4px;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--phone-line);
+    background: rgba(5, 18, 29, 0.985);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(16px);
+  }
+
+  body.mobile-scenario-shell .bottom-nav button,
+  body.mobile-scenario-shell .bottom-nav button.desktop-hide-vitals-nav {
+    display: grid !important;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 56px;
+    padding: 6px 2px 5px;
+    border-radius: 14px;
+    font-size: 0.72rem;
+    line-height: 1.1;
+    font-weight: 850;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body.mobile-scenario-shell .bottom-nav button > span {
+    margin: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  body.mobile-scenario-shell .bottom-nav button.active {
+    border-color: #78c9ff;
+    background: #174f73;
+    box-shadow: inset 0 0 0 1px rgba(120, 201, 255, 0.2);
+  }
+
+  body.mobile-scenario-shell .bottom-nav.guide-locked button[data-panel="findingsPanel"] {
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  /* —— Action sheet (full clinical workspace) —— */
+  body.mobile-scenario-shell .sheet-backdrop {
+    z-index: 70;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  body.mobile-scenario-shell .action-sheet {
+    z-index: 75;
+    top: var(--phone-top-h);
+    left: 0;
+    right: 0;
+    bottom: var(--phone-nav-h);
+    transform: none;
+    width: 100%;
+    max-height: none;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: #081925;
+    box-shadow: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto !important;
+  }
+
+  body.mobile-scenario-shell .action-sheet[hidden] {
+    display: none !important;
+  }
+
+  body.mobile-scenario-shell .sheet-handle { display: none; }
+
+  body.mobile-scenario-shell .sheet-header {
+    position: sticky;
+    top: 0;
+    z-index: 8;
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    border-bottom: 1px solid #294d64;
+    background: var(--phone-panel);
+  }
+
+  body.mobile-scenario-shell .sheet-header p { font-size: 0.58rem; }
+  body.mobile-scenario-shell .sheet-header h2 { font-size: 1.08rem; }
+
+  body.mobile-scenario-shell .return-patient-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 108px;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border-color: #4b8caf;
+    background: #173f5a;
+    font-size: 0.88rem;
+    font-weight: 900;
+  }
+
+  /* Compact one-row context strip */
+  body.mobile-scenario-shell .sheet-patient-context {
+    position: static;
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 0;
+    border-bottom: 1px solid #23475d;
+    border-radius: 0;
+    background: #0a202f;
+    overflow: hidden;
+  }
+
+  body.mobile-scenario-shell .sheet-patient-context > span {
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  body.mobile-scenario-shell .sheet-patient-context > span:nth-child(3) {
+    display: none; /* hide Due row on phone; Latest + Status are enough */
+  }
+
+  body.mobile-scenario-shell .sheet-patient-context small {
+    font-size: 0.55rem;
+  }
+
+  body.mobile-scenario-shell .sheet-patient-context strong {
+    margin-top: 1px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body.mobile-scenario-shell .vp-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px 12px 20px;
+    scrollbar-gutter: stable;
+  }
+
+  body.mobile-scenario-shell .vp-panel .sub {
+    margin: 0 0 10px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--phone-muted);
+  }
+
+  /* —— Tappable clinical controls —— */
+  body.mobile-scenario-shell .tool-actions a,
+  body.mobile-scenario-shell .tool-actions button,
+  body.mobile-scenario-shell .assessment-row-action,
+  body.mobile-scenario-shell .treatment-select,
+  body.mobile-scenario-shell .history-category-list button,
+  body.mobile-scenario-shell .primary-action,
+  body.mobile-scenario-shell .secondary,
+  body.mobile-scenario-shell .horse-assessment-workspace-action,
+  body.mobile-scenario-shell .horse-exam-button,
+  body.mobile-scenario-shell .horse-question-choice,
+  body.mobile-scenario-shell .horse-bls-followup-btn,
+  body.mobile-scenario-shell .reasoning-options button,
+  body.mobile-scenario-shell .finding-filters button {
+    min-height: 48px;
+    touch-action: manipulation;
+  }
+
+  body.mobile-scenario-shell .compact-vital-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+
+  body.mobile-scenario-shell .compact-vital-row .vital-row-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  body.mobile-scenario-shell .compact-vital-row .vital-row-actions a,
+  body.mobile-scenario-shell .compact-vital-row .vital-row-actions button {
+    min-height: 48px !important;
+  }
+
+  body.mobile-scenario-shell .icon-btn,
+  body.mobile-scenario-shell .close-btn,
+  body.mobile-scenario-shell .scenario-control-head > button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  /* —— Horse treatment mobile (was unstyled) —— */
+  body.mobile-scenario-shell .horse-treatment-mobile-menu {
+    display: grid;
+    gap: 12px;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-intro {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--phone-line);
+    border-radius: 14px;
+    background: var(--phone-panel-2);
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-intro strong {
+    color: #fff;
+    font-size: 0.98rem;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-intro span {
+    color: var(--phone-muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-select {
+    display: grid;
+    gap: 6px;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-select > span {
+    color: #a8dbff;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-select select {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 1px solid #5b829a;
+    border-radius: 14px;
+    background: #071827;
+    color: #fff;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #8ccfff 50%), linear-gradient(135deg, #8ccfff 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-select select:disabled {
+    opacity: 0.45;
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-detail {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--phone-line);
+    border-radius: 14px;
+    background: var(--phone-panel);
+  }
+
+  body.mobile-scenario-shell .horse-treatment-mobile-detail .horse-treatment-perform,
+  body.mobile-scenario-shell .horse-treatment-mobile-detail button {
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 900;
+  }
+
+  body.mobile-scenario-shell .horse-question-choice-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  body.mobile-scenario-shell .horse-question-choice {
+    width: 100% !important;
+    min-height: 52px !important;
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+
+  /* —— Next-action card: don’t cover nav —— */
+  body.mobile-scenario-shell .clinical-next-actions {
+    z-index: 78;
+    left: 8px;
+    right: 8px;
+    bottom: calc(var(--phone-nav-h) + 8px);
+    transform: none;
+    width: auto;
+    max-height: 42dvh;
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  body.mobile-scenario-shell .clinical-next-buttons {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  body.mobile-scenario-shell .clinical-next-buttons button {
+    min-height: 48px;
+  }
+
+  /* —— Fullscreen overlays —— */
+  body.mobile-scenario-shell .hospital-handoff-workspace,
+  body.mobile-scenario-shell .horse-grade-workspace,
+  body.mobile-scenario-shell .embedded-sim-workspace,
+  body.mobile-scenario-shell .assessment-focus .focus-card {
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+  }
+
+  body.mobile-scenario-shell .scenario-control-dialog {
+    border-radius: 20px 20px 0 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.mobile-scenario-shell .scenario-control-dialog button,
+  body.mobile-scenario-shell .scenario-control-dialog a {
+    min-height: 48px;
+  }
+
+  /* Intro video: keep Skip / Play easy to hit on phones */
+  body.mobile-scenario-shell #horseIntroSkip {
+    min-height: 48px !important;
+    min-width: 88px !important;
+    padding: 12px 16px !important;
+    font-size: 1rem !important;
+    border-radius: 14px !important;
+    top: max(12px, env(safe-area-inset-top)) !important;
+    right: 12px !important;
+    z-index: 5 !important;
+    pointer-events: auto !important;
+  }
+
+  body.mobile-scenario-shell #horseIntroPlay {
+    min-height: 52px !important;
+    padding: 14px 22px !important;
+    font-size: 1.05rem !important;
+    border-radius: 14px !important;
+    bottom: max(18px, env(safe-area-inset-bottom)) !important;
+    pointer-events: auto !important;
+  }
+}
+
+@media (max-width: 979px) and (orientation: landscape) and (max-height: 540px) {
+  body.mobile-scenario-shell .patient-stage {
+    height: min(48dvh, 220px);
+    min-height: 140px;
+    max-height: 220px;
+  }
+}
+
+@media (max-width: 390px) {
+  body.mobile-scenario-shell .bottom-nav button {
+    font-size: 0.66rem;
+  }
+
+  body.mobile-scenario-shell .vp-top h1 {
+    font-size: 0.95rem;
+  }
+}
